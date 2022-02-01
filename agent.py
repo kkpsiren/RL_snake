@@ -6,6 +6,7 @@ from snake_game import SnakeGameAI, Direction, Point, BLOCK_SIZE
 from collections import deque
 from model import Linear_QNet, QTrainer
 from helper import plot
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -18,13 +19,15 @@ GAMMA = 0.95
 
 
 class Agent:
-    def __init__(self, epsilon=EPSILON, gamma=GAMMA) -> None:
+    def __init__(self, epsilon=EPSILON, gamma=GAMMA, load_model=None) -> None:
         self.n_games = 0
         self.epsilon = epsilon  # randomness
         self.gamma = gamma  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
 
         self.model = Linear_QNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+        if load_model is not None:
+            self.model.load(load_model)
         self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)
 
     def get_state(self, game):
@@ -108,7 +111,13 @@ class Agent:
             mini_sample = self.memory
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        self.trainer.train_step(
+            np.array(states),
+            np.array(actions),
+            np.array(rewards),
+            np.array(next_states),
+            np.array(dones),
+        )
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
@@ -132,12 +141,46 @@ class Agent:
         return final_move
 
 
-def train():
+def play(load_model=None):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
-    agent = Agent()
+    agent = Agent(load_model=load_model)
+    agent.model.eval()
+    game = SnakeGameAI()
+    while True:
+        # get old state
+        state_old = agent.get_state(game)
+
+        # get move
+        final_move = agent.get_action(state_old)
+
+        # perform move and get new state
+        _, done, score = game.play_step(final_move)
+
+        if done:
+            # train long memory, plot result
+            game.reset()
+            agent.n_games += 1
+            if score > record:
+                record = score
+
+            print(f"Game {agent.n_games} Score {score} Record {record}")
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores, title="Playing")
+
+
+def train(load_model=None, savepath=None):
+    plot_scores = []
+    plot_mean_scores = []
+    total_score = 0
+    record = 0
+    agent = Agent(load_model=load_model)
+    agent.model.train()
     game = SnakeGameAI()
     while True:
         # get old state
@@ -162,7 +205,7 @@ def train():
             agent.train_long_memory()
             if score > record:
                 record = score
-                # agent.model.save()
+                agent.model.save(savepath)
 
             print(f"Game {agent.n_games} Score {score} Record {record}")
             plot_scores.append(score)
@@ -173,4 +216,37 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    usage = "%prog [options] file (or - for stdin)\n"
+    parser = ArgumentParser(
+        usage,
+        formatter_class=RawDescriptionHelpFormatter,
+        epilog="""
+    Example of usage:
+    """,
+    )
+    parser.add_argument(
+        "-m", "--model", action="store", type=str, dest="model", default=None
+    )
+    parser.add_argument(
+        "-s",
+        "--save",
+        action="store",
+        type=str,
+        dest="save",
+        default="./model/model.pth",
+    )
+    parser.add_argument(
+        "-p",
+        "--play",
+        action="store_true",
+    )
+
+    args = parser.parse_args()
+    savepath = args.save
+
+    if args.play:
+        print("play only")
+        play(load_model=args.model)
+    else:
+        print(f"saving model to {savepath}")
+        train(load_model=args.model, savepath=savepath)

@@ -6,12 +6,12 @@ from IPython.utils import io
 plt.ion()
 
 
-def plot(scores, mean_scores):
+def plot(scores, mean_scores, title="Training"):
     with io.capture_output() as captured:
         display.clear_output(wait=True)
         display.display(plt.gcf())
     plt.clf()
-    plt.title("Training...")
+    plt.title(f"{title}...")
     plt.xlabel("Number of games")
     plt.ylabel("Score")
     plt.plot(scores, alpha=0.8)

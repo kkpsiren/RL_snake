@@ -189,6 +189,8 @@ cython_debug/
 .history
 .ionide
 
+model/*
+*odel.pth
 # Support for Project snippet scope
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,jupyternotebooks,dotenv
