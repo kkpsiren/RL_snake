@@ -1,6 +1,6 @@
 # RL for matopeli.
 
-![img](/extra/shot.png?raw=true "example")
+![img](/extras/shot.png?raw=true "example")
 
 
 ## setup
