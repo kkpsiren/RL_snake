@@ -4,7 +4,7 @@ import numpy as np
 import random
 from snake_game import SnakeGameAI, Direction, Point, BLOCK_SIZE
 from collections import deque
-from model import Linear_QNet, QTrainer, LSTM
+from model import ConvQNet, QTrainer
 from helper import plot
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
@@ -25,15 +25,8 @@ class Agent:
         self.gamma = gamma  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
 
-        self.model = Linear_QNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        # self.model = LSTM(
-        #     INPUT_SIZE,
-        #     HIDDEN_SIZE,
-        #     OUTPUT_SIZE,
-        #     num_layers=1,
-        #     bidirectional=False,
-        #     dropout=0.1,
-        # )
+        self.model = ConvQNet()
+        
         if load_model is not None:
             self.model.load(load_model)
         self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)

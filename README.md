@@ -1,5 +1,8 @@
 # RL for matopeli.
 
+![img](/extra/shot.png?raw=true "example")
+
+
 ## setup
 ```
 conda create -n RL_snake python=3.7 -y 
